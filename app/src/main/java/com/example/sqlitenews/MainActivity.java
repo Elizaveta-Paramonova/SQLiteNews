@@ -1,6 +1,5 @@
 package com.example.sqlitenews;
 
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Intent;
@@ -13,15 +12,51 @@ import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.Toast;
 
-import java.util.Timer;
-import java.util.TimerTask;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.Executor;
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
+import androidx.biometric.BiometricPrompt;
 
 public class MainActivity extends AppCompatActivity {
+
+    private Executor executor;
+    private BiometricPrompt biometricPrompt;
+    private BiometricPrompt.PromptInfo promptInfo;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        executor = ContextCompat.getMainExecutor(this);
+        biometricPrompt = new BiometricPrompt(MainActivity.this, executor, new BiometricPrompt.AuthenticationCallback() {
+            @Override
+            public void onAuthenticationError(int errorCode, @NonNull CharSequence errString) {
+                super.onAuthenticationError(errorCode, errString);
+                Intent intent = new Intent(MainActivity.this, SplashScreen.class);
+                startActivity(intent);
+
+            }
+
+            @Override
+            public void onAuthenticationSucceeded(@NonNull BiometricPrompt.AuthenticationResult result) {
+                super.onAuthenticationSucceeded(result);
+                Toast.makeText(MainActivity.this, "Успешно!", Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onAuthenticationFailed() {
+                super.onAuthenticationFailed();
+            }
+        });
+
+        promptInfo = new BiometricPrompt.PromptInfo.Builder()
+                .setTitle("Авторизация")
+                .setSubtitle("Прислоните палец")
+                .setNegativeButtonText("Отмена")
+                .build();
+
+        biometricPrompt.authenticate(promptInfo);
 
         EditText editTextPassword2 = findViewById(R.id.editTextPassword2);
         Button btnLogin = findViewById(R.id.btnLogin);
@@ -74,7 +109,7 @@ public class MainActivity extends AppCompatActivity {
             else {
                 Cursor c = db.rawQuery("Select * from UserInfo where UserInfo.login='" + editTextLogin.getText().toString() + "' and UserInfo.password='" + editTextPassword1.getText().toString() +"' " +
                         "and UserInfo.role='A'", null);
-                if (c.getCount() > 0) 
+                if (c.getCount() > 0)
                 {
                     Intent intent = new Intent(MainActivity.this, Admin.class);
                     startActivity(intent);
